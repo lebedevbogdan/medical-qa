@@ -1,49 +1,35 @@
 # coding: utf-8
 """Класс FastApiHandler, который обрабатывает запросы API."""
-from sentence_transformers import SentenceTransformer, util
+from sentence_transformers import util
 import torch
-import pandas as pd
+import numpy as np
 
 class FastApiHandler:
     """Класс FastApiHandler, который обрабатывает запрос и возвращает топ вопросов."""
 
-    def __init__(self):
+    def __init__(self, model, corpus, corpus_embeddings):
         """Инициализация переменных класса."""
-
+        self.model = model
+        self.corpus = corpus
+        self.corpus_embeddings = corpus_embeddings
         # Типы параметров запроса для проверки
         self.param_types = {
             # "question_id": str,
             "model_params": dict
         }
-
-        self.model_name = "all-MiniLM-L6-v2"
-        self.data_path = "../medical_questions_pairs.csv"
-        self.load_embedding_model(model_path=self.model_name)
-        self.data = pd.read_csv(self.data_path)
-        self.corpus = pd.concat([self.data['question_1'], self.data['question_2']]).drop_duplicates().reset_index(drop=True)
         # Необходимые параметры для предсказаний модели оттока
         self.required_model_params = [
-            'sentence', 'k'
+            'question', 'k'
         ]
-
-    def load_embedding_model(self, model_path: str):
-        """Загружаем обученную модель SentenceTransformer.
-        Args:
-            model_path (str): Путь до модели.
-        """
-        try:
-            self.model = SentenceTransformer(model_path)
-
-        except Exception as e:
-            print(f"Failed to load model: {e}")
 
     def cos_sim_matrix(self, model_params: dict):
         """Считаем матрицу схожестей"""
         try:
-            corpus_embeddings = self.model.encode(self.corpus, show_progress_bar=True)
-            sentence = model_params['sentence']
-            sentence_embeddings = self.model.encode(sentence, show_progress_bar=True)
-            cosine_scores = util.cos_sim(sentence_embeddings, corpus_embeddings)
+            question = model_params['question']
+            question_embeddings = self.model.encode([question], show_progress_bar=True)
+            exclude = np.where(np.all(np.round(self.corpus_embeddings,4) == np.round(question_embeddings,4), axis=1))
+            cosine_scores = util.cos_sim(question_embeddings, self.corpus_embeddings)[0]
+            cosine_scores[exclude] = 0
             return cosine_scores
         except Exception as e:
             print(f"Failed to count matrix: {e}")
@@ -122,34 +108,17 @@ class FastApiHandler:
                 # print(f"Predicting for question_id: {question_id} and model_params:\n{model_params}")
                 # Получаем предсказания модели
                 cosine_scores = self.cos_sim_matrix(model_params)
-                top_values, top_indices = torch.topk(cosine_scores[cosine_scores<2], k=model_params['k']+1)
-                sentences = list(self.corpus.loc[top_indices])[1:]
-                top_values = top_values.tolist()[1:]
+                ## исправить исключение идентичного запроса (например, найти индекс такого же сообщения)
+                top_values, top_indices = torch.topk(cosine_scores, k=model_params['k'])
+                questions = list(self.corpus.loc[top_indices])
+                top_values = top_values.tolist()
                 response = {
                     # "question_id": question_id, 
-                    "cosine_simmilarity": top_values, 
-                    "sentences": sentences
+                    "questions": questions,
+                    "cosine_simmilarity": top_values
                 }
         except Exception as e:
             print(f"Error while handling request: {e}")
             return {"Error": "Problem with request"}
         else:
             return response
-
-if __name__ == "__main__":
-
-    # Создаем тестовый запрос
-    test_params = {
-	    # "question_id": "101",
-        "model_params": {
-            'k':3,
-            'sentence': "After how many hour from drinking an antibiotic can I drink alcohol?"
-        }
-    }
-
-    # Создаем обработчик запросов для API
-    handler = FastApiHandler()
-
-    # Делаем тестовый запрос
-    response = handler.handle(test_params)
-    print(f"Response: {response}")

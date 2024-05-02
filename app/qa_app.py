@@ -1,25 +1,24 @@
 """Приложение Fast API для поиска ближайших вопросов."""
-
+from sentence_transformers import SentenceTransformer
+import pandas as pd
 
 from fastapi import FastAPI, Body
 from handler import FastApiHandler
 
+MODEL_NAME = "all-MiniLM-L6-v2"
+DATA_PATH = "../medical_questions_pairs.csv"
 
-"""
-Пример запуска из директории mle-sprint3/app:
-uvicorn qa_app:app --reload --port 8081 --host 0.0.0.0
+model = SentenceTransformer(MODEL_NAME)
+data = pd.read_csv(DATA_PATH)
 
-Для просмотра документации API и совершения тестовых запросов зайти на  http://127.0.0.1:8081/docs
-
-Если используется другой порт, то заменить 8081 на этот порт
-"""
-
+corpus = pd.concat([data['question_1'], data['question_2']]).drop_duplicates().reset_index(drop=True)
+corpus_embeddings = model.encode(corpus, show_progress_bar=True)
 
 # Создаем приложение Fast API
 app = FastAPI()
 
 # Создаем обработчик запросов для API
-app.handler = FastApiHandler()
+app.handler = FastApiHandler(model=model, corpus=corpus, corpus_embeddings=corpus_embeddings)
 
 
 @app.post("/api/qa/") 
@@ -28,7 +27,7 @@ def get_simmilar_docs(
     model_params: dict = Body(
         example={
             'k':3,
-            'sentence': "After how many hour from drinking an antibiotic can I drink alcohol?"
+            'question': "After how many hour from drinking an antibiotic can I drink alcohol?"
         }
     )
 ):
