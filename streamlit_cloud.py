@@ -2,22 +2,23 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import pickle
-from sentence_transformers import util
+from sentence_transformers import util, SentenceTransformer
 
 MODEL_NAME = "all-MiniLM-L6-v2"
 DATA_PATH = "embeddings.pkl"
 MAX_VALUE = 10
 
 @st.cache_data
-def make_embeddings(DATA_PATH):
+def make_embeddings(path):
+    model = SentenceTransformer(MODEL_NAME)
     # Load sentences & embeddings from disc
-    with open(DATA_PATH, "rb") as fIn:
+    with open(path, "rb") as fIn:
         stored_data = pickle.load(fIn)
     corpus = stored_data["sentences"]
     corpus_embeddings = stored_data["embeddings"]
     return model, corpus, corpus_embeddings
 
-model, corpus, corpus_embeddings = make_embeddings(MODEL_NAME, DATA_PATH)
+model, corpus, corpus_embeddings = make_embeddings(DATA_PATH)
 
 @st.cache_data
 def return_df(_model, question):
