@@ -27,8 +27,10 @@ class FastApiHandler:
         try:
             question = model_params['question']
             question_embeddings = self.model.encode([question], show_progress_bar=True)
+            # Находим индекс в тензоре схожестей, который соответствует тому же предложению (то есть схожесть равна 1)
             exclude = np.where(np.all(np.round(self.corpus_embeddings,4) == np.round(question_embeddings,4), axis=1))
             cosine_scores = util.cos_sim(question_embeddings, self.corpus_embeddings)[0]
+            # Чтобы не учитывать то же самое предложение, назначаем ему схожесть 0
             cosine_scores[exclude] = 0
             return cosine_scores
         except Exception as e:
@@ -108,7 +110,6 @@ class FastApiHandler:
                 # print(f"Predicting for question_id: {question_id} and model_params:\n{model_params}")
                 # Получаем предсказания модели
                 cosine_scores = self.cos_sim_matrix(model_params)
-                ## исправить исключение идентичного запроса (например, найти индекс такого же сообщения)
                 top_values, top_indices = torch.topk(cosine_scores, k=model_params['k'])
                 questions = list(self.corpus.loc[top_indices])
                 top_values = top_values.tolist()

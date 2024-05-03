@@ -20,7 +20,6 @@ app = FastAPI()
 # Создаем обработчик запросов для API
 app.handler = FastApiHandler(model=model, corpus=corpus, corpus_embeddings=corpus_embeddings)
 
-
 @app.post("/api/qa/") 
 def get_simmilar_docs(
     # question_id: str,

@@ -19,7 +19,7 @@ number = st.slider("Select a number of options", value=5, min_value=1, max_value
 # Кнопка для отправки POST-запроса
 if st.session_state.stage == 0:
     st.button('Find', on_click=set_state, args=[1])
-# URL вашего микросервиса
+# URL микросервиса
 url = 'http://127.0.0.1:8081/api/qa/'
 # Тело POST-запроса
 data = {

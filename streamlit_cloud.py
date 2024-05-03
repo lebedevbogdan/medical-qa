@@ -11,7 +11,6 @@ MAX_VALUE = 10
 @st.cache_data
 def make_embeddings(path):
     model = SentenceTransformer(MODEL_NAME)
-    # Load sentences & embeddings from disc
     with open(path, "rb") as fIn:
         stored_data = pickle.load(fIn)
     corpus = stored_data["sentences"]
@@ -23,8 +22,10 @@ model, corpus, corpus_embeddings = make_embeddings(DATA_PATH)
 @st.cache_data
 def return_df(_model, question):
     question_embeddings = model.encode([question], show_progress_bar=True)
+    # Находим индекс в тензоре схожестей, который соответствует тому же предложению (то есть схожесть равна 1)
     exclude = np.where(np.all(np.round(corpus_embeddings,4) == np.round(question_embeddings,4), axis=1))
     cosine_scores = util.cos_sim(question_embeddings, corpus_embeddings)[0]
+    # Чтобы не учитывать то же самое предложение, назначаем ему схожесть 0
     cosine_scores[exclude] = 0
     sorted_indices = np.argsort(-cosine_scores)
     top_indices = sorted_indices[:MAX_VALUE]
