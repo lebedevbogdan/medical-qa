@@ -19,7 +19,7 @@ def make_embeddings(path):
 
 model, corpus, corpus_embeddings = make_embeddings(DATA_PATH)
 
-@st.cache_data
+@st.cache_data(show_spinner="Return result")
 def return_df(_model, question):
     question_embeddings = model.encode([question], show_progress_bar=True)
     # Находим индекс в тензоре схожестей, который соответствует тому же предложению (то есть схожесть равна 1)
