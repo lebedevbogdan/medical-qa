@@ -8,7 +8,7 @@ MODEL_NAME = "all-MiniLM-L6-v2"
 DATA_PATH = "embeddings.pkl"
 MAX_VALUE = 10
 
-@st.cache_resource(show_spinner="Загружаю модель")
+@st.cache_resource(show_spinner="Loading...")
 def make_embeddings(path):
     model = SentenceTransformer(MODEL_NAME)
     with open(path, "rb") as fIn:
@@ -22,11 +22,13 @@ model, corpus, corpus_embeddings = make_embeddings(DATA_PATH)
 @st.cache_data(show_spinner="Return result")
 def return_df(_model, question):
     question_embeddings = model.encode([question], show_progress_bar=True)
-    # Находим индекс в тензоре схожестей, который соответствует тому же предложению (то есть схожесть равна 1)
-    exclude = np.where(np.all(np.round(corpus_embeddings,4) == np.round(question_embeddings,4), axis=1))
     cosine_scores = util.cos_sim(question_embeddings, corpus_embeddings)[0]
-    # Чтобы не учитывать то же самое предложение, назначаем ему схожесть 0
-    cosine_scores[exclude] = 0
+    
+    # # Находим индекс в тензоре схожестей, который соответствует тому же предложению (то есть схожесть равна 1)
+    # exclude = np.where(np.all(np.round(corpus_embeddings,4) == np.round(question_embeddings,4), axis=1))
+    # # Чтобы не учитывать то же самое предложение, назначаем ему схожесть 0
+    # cosine_scores[exclude] = 0
+
     # Сортируем схожести по убыванию и осталвяем первые MAX_VALUE значений
     sorted_indices = np.argsort(-cosine_scores)
     top_indices = sorted_indices[:MAX_VALUE]
@@ -42,10 +44,10 @@ def set_state(i):
     st.session_state.stage = i
 
 st.title('Similar question search')
-text_input = st.text_input('Ask a question:', 'After how many hour from drinking an antibiotic can I drink alcohol?')
+text_input = st.text_input('Ask a question:', 'I have a toothache, what should I do?')
 k = st.slider("Select a number of options", value=5, min_value=1, max_value=MAX_VALUE)
 
-# При запуске отобразится кнопка Find, которая при нажатии переведен в состояние 1
+# При запуске отобразится кнопка Find, которая при нажатии переведет в состояние 1
 if st.session_state.stage == 0:
     st.button('Find', on_click=set_state, args=[1])
 
