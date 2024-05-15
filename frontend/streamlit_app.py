@@ -14,7 +14,7 @@ st.title('Similar question search')
 text_input = st.text_input('Ask a question:', 'I have a toothache, what should I do?')
 
 # Поле для ввода кол-ва
-number = st.slider("Select a number of options", value=5, min_value=1, max_value=10)
+number = st.slider("Select the number of options", value=5, min_value=1, max_value=10)
 
 # Кнопка для отправки POST-запроса
 if st.session_state.stage == 0:
@@ -36,4 +36,6 @@ if st.session_state.stage >= 1:
     print(response)
     # Вывод ответа микросервиса
     st.text('Response:')
-    st.dataframe(pd.DataFrame(response.json()))
+    df = pd.DataFrame(response.json()).rename(columns={'cosine_simmilarity':'similarity'})
+    df['similarity'] = df['similarity'].map(lambda x: '{:.0%}'.format(x))
+    st.dataframe(df)

@@ -36,7 +36,9 @@ def return_df(_model, question):
     top_values = cosine_scores[top_indices]
     # Собираем предложения в датафрейм
     questions = list(corpus.loc[top_indices])
-    df = pd.DataFrame({'questions': questions, 'cosine_similarity': top_values})
+    df = pd.DataFrame({'questions': questions, 'similarity': top_values})
+    # Переведем схожесть в проценты для читаемости результата
+    df['similarity'] = df['similarity'].map(lambda x: '{:.0%}'.format(x))
     return df
 
 if 'stage' not in st.session_state:
@@ -44,9 +46,9 @@ if 'stage' not in st.session_state:
 def set_state(i):
     st.session_state.stage = i
 
-st.title('Similar question search')
+st.title('Similar questions search')
 text_input = st.text_input('Ask a question:', 'I have a toothache, what should I do?')
-k = st.slider("Select a number of options", value=5, min_value=1, max_value=MAX_VALUE)
+k = st.slider("Select the number of options", value=5, min_value=1, max_value=MAX_VALUE)
 
 # При запуске отобразится кнопка Find, которая при нажатии переведет в состояние 1
 if st.session_state.stage == 0:
