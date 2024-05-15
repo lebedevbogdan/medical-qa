@@ -9,6 +9,7 @@ DATA_PATH = "embeddings.pkl"
 MAX_VALUE = 10
 
 @st.cache_resource(show_spinner="Loading...")
+# Открываем подготовленные эмбеддинги с предложениями для более быстрого запуска приложения
 def make_embeddings(path):
     model = SentenceTransformer(MODEL_NAME)
     with open(path, "rb") as fIn:
